@@ -1,0 +1,22 @@
+Linux distro optimization
+
+
+Idea
+  Detect most used packages and rebuild them with optimization
+
+Flow
+  # get list of all installed packages and their dependencies
+  ./pkg_deplist.sh > pkgs.db
+  # perform simple statistics and list 25 most used / dependent packages
+  gawk -f wstat.awk pkgs.db | sort -n | grep -vE '\)\]| :' | tail -25
+  # listed packages should be rebuilt following way
+  rpmbuild --target i686 --rebuild <file-name-source-rpm>
+  # packages can be downloaded from koji for instance:
+  #   glibc http://koji.fedoraproject.org/koji/packageinfo?packageID=57
+
+
+Files
+  pkg_deplist.sh    main BASH script producing list of packages with dependencies
+  wstat.awk         [g]awk word counter
+
+
