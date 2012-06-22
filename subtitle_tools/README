@@ -1,0 +1,74 @@
+Subtitle tools
+
+
+Idea
+  Create tools which help with subtitle timing modification.
+  Supported subtitle formats should be srt and sub.
+  Minimal dependencies (BASH, AWK)
+
+Flow
+  # sub subtitle can be converted by sub2srt.sh to srt format
+  ./sub2srt.sh a.sub > a.srt
+
+  # srt subtitle timing can be modified by srt_glue.sh
+  #   there are various modes which can be used in different situations:
+  #   a] if you need to shift timing by constant offset (+ 0.3 secs):
+  ./srt_glue.sh --mod-offset=0.3 i.srt > o.srt
+  #   b] if you need to shift & scale timing:
+  ./srt_glue.sh --mod-offset=0.3 --mod-scale=1.003 i.srt > o.srt
+  #   c] if you need to define new time for first and last subtitle:
+  ./srt_glue.sh --mod-begin=1:0,4 --mod-end=1:43:5,8  i.srt > o.srt
+  #   d] if you need to define new times for any selected pair of subtitles 
+  #      defined by subtitle numbers:
+  ./srt_glue.sh --mod-ts-a=2@1:0,4 --mod-ts-b=245@1:43:5,8  i.srt > o.srt
+  #   d] finally you can define new times for any selected pair of moments
+  #      defined by time:
+  ./srt_glue.sh --mod-ts-a=1:3,9@1:0,4 --mod-ts-b=1:38:1,8@1:43:5,8  i.srt > o.srt
+
+
+Files
+  sub2srt.sh                BASH sub to srt subtitle translator wrapper
+  sub2srt.awk               AWK sub to srt subtitle translator core
+  srt_glue.sh               BASH srt subtitle timing modifier wrapper
+  srt_glue.awk              AWK  srt subtitle timing modifier 
+  subtitle_tools_funcs.awk  AWK commonly used functions
+
+License
+  GPL v2
+  http://www.gnu.org/licenses/gpl-2.0.html
+
+
+Tool help
+  [f@quad subtitle_tools]$ ./sub2srt.sh -h
+  sub2srt.sh [-h|--help]                # this help
+              [--rate=<rate-float>]      # rate for sub -> srt conversion
+              <input-sub-file>           # input sub subtitle file
+  
+  sub2srt.sh converts sub subtitle file to srt subtitle file (stdout)
+
+
+  [f@quad subtitle_tools]$ ./srt_glue.sh -h
+  srt_glue.sh [options] <input-srt-file>
+    [-h|--help]                   # this help
+    [-d|--debug|-v|--verbose]     # be verbose and print debug messages
+    [--mod-scale=<scale-float>]   # modify floating scale            [def:1.000]
+    [--mod-offset=<offset-float>] # modify offset movement           [def: 0.00]
+    [--mod-begin=<new-begin>]     # new 1st subtitle start time         [def: -]
+    [--mod-end=<new-end>]         # new last subtitle end time          [def: -]
+    [--mod-ts-a=<ts>@<new-ts>]    # old timestamp <ts> -> new <new-ts>  [def: -]
+    [--mod-ts-a=<nr>@<new-ts>]    # subtitle <nr> move to time <new-ts> [def: -]
+    [--mod-ts-b=<ts>@<new-ts>]    # old timestamp <ts> -> new <new-ts>  [def: -]
+    [--mod-ts-b=<nr>@<new-ts>]    # subtitle <nr> move to time <new-ts> [def: -]
+    <input-srt-file>
+  
+  srt_glue.sh modifies input srt subtitle file timing. Modified srt file
+  is provided on stdout.
+  There are three ways of subtitle modification:
+  a] providing precise scale and offset floats (--scale=S, --offset=O)
+  b] enlarging / shrinking subtitle providing new begin and end
+      (--mod-begin=NB, --mod-end=NE)
+  c] enlarging / shrinking subtitle by sticking two timestamps to their new
+      timestamps (--mod-ts-a=..., --mod-ts-b=...)
+  At least one of modification method needs to be supplied otherwise modified
+  output subtitle file will be identical.
+
