@@ -1,0 +1,35 @@
+Linux LD_PRELOAD example
+
+
+Idea
+  Fake library system call using fake library ith LD_PRELOAD.
+  Minimal dependencies (BASH, gcc, dlfcn.h)
+
+Flow
+  # run the bash demonstrator script ./run.sh:
+
+  [f@dhcp-lab-xyz ld_preload_example]$ ./run.sh
+  Compile stuff.
+  .compiled ok 00 (ecodes:00)
+  Normal rand operation:
+  my random number: 1038560620
+  my random number: 1814138293
+  my random number: 431968634
+  Overriden rand operation:
+  my random number: 1
+  my random number: 2
+  my random number: 3
+
+
+Files
+  run.sh                    BASH demonstrator
+  get_rand.c                main C code calling rand system call
+  mylibrand.c               fake library used for overriding rand call
+
+License
+  GPL v2
+  http://www.gnu.org/licenses/gpl-2.0.html
+
+
+
+
