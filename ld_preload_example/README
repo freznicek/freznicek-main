@@ -2,7 +2,7 @@ Linux LD_PRELOAD example
 
 
 Idea
-  Fake library system call using fake library ith LD_PRELOAD.
+  Fake library system call using fake library with LD_PRELOAD.
   Minimal dependencies (BASH, gcc, dlfcn.h)
 
 Flow
