@@ -1,0 +1,57 @@
+Unix/Linux test patternfile retimming tool
+
+
+Idea
+  Change timing of generated WGL / VEC test pattern.
+  Minimal dependencies ([t]csh, [g]awk)
+  
+  WGL / VEC test pattern is file used for (semiconductor) device testing and
+  contains set of values forced at device input pins and expected output pin
+  values.
+
+Flow
+  # run the retiming tool spedifying input and output files:
+
+  [f@quad retime_testpattern]$ ./retime_pattern -f 0.9 -o o.vec i.wgl
+  # retime_pattern is starting up...
+  # launching the main engine... v0.3
+  # factor range check...OK
+  # input file type detection... WGL
+  # exiting... {success}
+  # done. 2012-07-01,12:20:57 (dur. 00:00:00)
+
+
+  [f@quad retime_testpattern]$ ./retime_pattern
+  # retime_pattern is starting up...
+  retime_pattern usage:
+  
+    retime_pattern -f <factor_value> [-o <outfile>] [-h] <infile>
+  
+    -h|-help
+          this help page
+    <infile>
+          this is required argument which specifies the WGL or VEC pattern
+          file name to be retimed
+          {be so nice and keep either .vec or .wgl file name suffix}
+    -f|-factor <factor_value>
+          the factor parameter is required parameter and <factor_value>
+          describes how to retime pattern file:
+          <factor_value> needs to be in the range: <1e-5,1e+5> where
+          factor_value < 1.0 speeds up the pattern file timing.
+    -o|-out <outfile>
+          output file name specification parameter
+          if not given then stdout is used instead
+  
+    retime_pattern was developed by freznicek (using Cygwin and RedHat Linux).
+    retime_pattern requires [t]csh shell and gawk >= 3.1.0 processor.
+  .
+
+
+Files
+  retime_pattern            [T]CSH wrapper & inside [G]AWK timing engine
+
+License
+  GPL v2
+  http://www.gnu.org/licenses/gpl-2.0.html
+
+

@@ -1,0 +1,486 @@
+#!/bin/csh -f
+# 
+# wgl/vec pattern re-timing engine (retime_pattern)
+# v0.3.github
+# by freznicek
+
+set AWK  = "awk"
+set GAWK = "gawk"
+if($?DEBUG_ON) then
+  set GAWK_main = "pgawk"
+else
+  set GAWK_main = "gawk"
+endif
+set sname = `echo " $0" | ${AWK} -F'/' '{printf($NF)}'`
+set arg_v = `echo " $*" | ${AWK}  '{printf(NF)}'`
+set date_time_str = "` date '+%Y%m%d_%H%M%S' `"
+set awk_fn = "/tmp/${sname}_${date_time_str}.awk"
+
+##############################################################################
+# start-up
+# ${GAWK} version test
+##############################################################################
+set gawk_reply = ` ${GAWK} 'BEGIN{printf("%03d",rshift(2,1))}' `
+if(${gawk_reply} != "001") then
+  echo "ERROR: ${sname} requires gawk >=3.1.0\!"
+  ${GAWK} --version | ${GAWK} '{if(fl==""){fl=$0}}END{printf("${sname}: current gawk version: %s\n",fl)}'
+  echo "Stop\!"
+  exit(-5)
+endif
+
+##############################################################################
+# start-time marker
+##############################################################################
+set btime = ` ${GAWK} 'BEGIN{printf("%d",systime())}' `
+
+echo '# '"${sname} is starting up..."
+
+##############################################################################
+# create AWK command-file
+##############################################################################
+${AWK} 'BEGIN{flg=0} {if(flg){print} if($0 == "#_# cut here awk_code_below #_#"){flg=1} }' $0 > ${awk_fn}
+
+##############################################################################
+# parse input command-line
+##############################################################################
+set HELP_SW =   ` echo " $*" |  ${AWK} -v cmdmode="simple" -v cmdID="-h" -v mode="cmd-line" -f ${awk_fn} `
+set FACTOR_SW = ` echo " $*" |  ${AWK} -v cmdmode="argument" -v cmdID="-f" -v mode="cmd-line" -f ${awk_fn} `
+set OFILE_SW = ` echo " $*" |  ${AWK} -v cmdmode="argument" -v cmdID="-o" -v mode="cmd-line" -f ${awk_fn} `
+set IFILE_SW = ` echo " $*" |  ${AWK} -v cmdmode="argument" -v cmdID="" -v mode="cmd-line" -f ${awk_fn} `
+
+set FACTOR_ERR = ` echo "fd" | ${GAWK} -v mode="validate-factor" -v factor="${FACTOR_SW}" -f ${awk_fn} `
+
+#echo "HELP_SW = ${HELP_SW}"
+#echo "FACTOR_SW = ${FACTOR_SW}"
+#echo "IFILE_SW = ${IFILE_SW}"
+#echo "OFILE_SW = ${OFILE_SW}"
+#echo "FACTOR_ERR = ${FACTOR_ERR}"
+
+##############################################################################
+# help/usage section
+##############################################################################
+if( ("${HELP_SW}" == "1")||("${arg_v}" == "0")|| \
+    ("${FACTOR_SW}" == "")||("${IFILE_SW}" == "")||("${FACTOR_ERR}" != "0") ) then
+  echo "${sname} usage:"
+  echo ""
+  echo "  ${sname} -f <factor_value> [-o <outfile>] [-h] <infile>"
+  echo ""
+  echo "   -h|-help"
+  echo "         this help page"
+  echo "   <infile>"
+  echo "         this is required argument which specifies the WGL or VEC pattern"
+  echo "         file name to be retimed"
+  echo "         {be so nice and keep either .vec or .wgl file name suffix}"
+  echo "   -f|-factor <factor_value>"
+  echo "         the factor parameter is required parameter and <factor_value>"
+  echo "         describes how to retime pattern file:"
+  echo "         <factor_value> needs to be in the range: <1e-5,1e+5> where"
+  echo "         factor_value < 1.0 speeds up the pattern file timing."
+  echo "   -o|-out <outfile>"
+  echo "         output file name specification parameter"
+  echo "         if not given then stdout is used instead"
+  echo ""
+  echo "  ${sname} was developed by freznicek (using Cygwin and RedHat Linux)."
+  echo "  ${sname} requires [t]csh shell and gawk >= 3.1.0 processor."
+  echo "."
+
+  # delete temp awk command file
+  if (-r ${awk_fn}) then
+    rm -f ${awk_fn}
+  endif
+  
+  exit(0)
+endif
+
+
+##############################################################################
+# input file existence check
+##############################################################################
+if (!(-r ${IFILE_SW})) then
+
+  echo "${IFILE_SW} input file cannot be read..."
+  echo "Cannot recover\! Stop\!"
+  # delete temp awk command file
+  if (-r ${awk_fn}) then
+    rm -f ${awk_fn}
+  endif
+
+  exit(-1)
+endif
+
+
+##############################################################################
+# main plot
+##############################################################################
+echo "fg" | ${GAWK_main} \
+            -v mode="main" \
+            -v factor="${FACTOR_SW}" -v ifile="${IFILE_SW}" -v ofile="${OFILE_SW}" \
+            -f ${awk_fn}
+
+
+if (($status) == "0") then
+  echo '# '"exiting... {success}"
+else
+  echo '# '"exiting... {a failure}"
+endif
+
+if (-r ${awk_fn}) then
+  rm -f ${awk_fn}
+endif
+
+
+##############################################################################
+# end+diff-time marker
+##############################################################################
+set etime = ` ${GAWK} 'BEGIN{printf("%d",systime())}' `
+set dtime = ` echo "$btime $etime " | ${AWK} '{bt= $1;et= $2;printf("%02d:%02d:%02d",(et-bt)/60/60,((et-bt)/60)%60,(et-bt)%60)}' `
+echo "# done. ` date '+%Y-%m-%d,%H:%M:%S' ` (dur. $dtime)"
+
+##############################################################################
+
+exit(0)
+  exit(0)
+exit(0)
+
+##############################################################################
+# [t]csh code end
+##############################################################################
+
+
+##############################################################################
+#_# cut here awk_code_below #_#
+##############################################################################
+
+
+
+##############################################################################
+# BEGIN section
+##############################################################################
+BEGIN{
+
+  ############################################################################
+  # main engine plot - begins here
+  ############################################################################
+  if(mode=="main")
+  {
+    # engine version
+    pstr = "# ";
+    verID="v0.3";
+    filetype = "wgl";
+    stop_cond_wgl = "vector(";
+    stop_cond_vec = "#beginvectors"
+    stop_cond_detected = 0;
+    tfactor = strtonum(factor);
+    printf("%slaunching the main engine... %s\n",pstr, verID);
+
+
+    ##########################################################################
+    # factor range check
+    ##########################################################################
+    printf("%sfactor range check...",pstr);
+    if(factor_val_range_check(tfactor))
+    {
+      printf("OK\n");
+    }else
+     {
+       printf("FAILED (%f)\n",tfactor);
+       exit(-10);
+     }
+
+    ##########################################################################
+    # input file type detection
+    ##########################################################################
+    printf("%sinput file type detection...",pstr);
+    
+    if(index(tolower(ifile),".vec")>0)
+    {                                            # .vec detected
+      printf(" VEC\n");
+      filetype = "vec";
+    }else
+     {
+       if(index(tolower(ifile),".wgl")>0)
+       {                                         # .wgl detected
+         printf(" WGL\n");
+       }else
+        {                                        # who knows?
+          getline fline < ifile;
+          if(index(fline,"ADS")>0)
+          {
+            printf(" VEC\n");
+            filetype = "vec";
+          }else
+            printf(" unknown -> treated as WGL\n");
+          close(ifile);
+        }
+     }
+    
+    ##########################################################################
+    # pattern file streeming + modification phase
+    ##########################################################################
+    while((getline cline < ifile)>0)
+    {
+      if(filetype=="wgl")
+        oline = modify_wgl_line(cline);
+      else
+        oline = modify_vec_line(cline);
+
+      if(ofile=="")
+        printf("%s\n",oline);
+      else
+        printf("%s\n",oline) > ofile;
+    }
+    close(ifile);
+  }
+
+  ############################################################################
+  # main engine plot - ends here
+  ############################################################################
+
+
+  ############################################################################
+  # factor parameter range check
+  ############################################################################
+  if(mode=="validate-factor")
+  {
+    if(factor_val_range_check(strtonum(factor))==1)
+      printf("0");     # -> FACTOR_ERR
+    else
+      printf("1");     # -> FACTOR_ERR
+  }
+  
+}
+
+
+##############################################################################
+# @ line rule
+##############################################################################
+{
+
+
+  ############################################################################
+  # command-line parser actions
+  ############################################################################
+  if(mode=="cmd-line")
+  {
+
+    # simple switch mode, return 0/1:
+    # search cmdID in the command line arguments
+    #   print "1" if found else "0"
+    if( (cmdmode=="simple")&&(cmdID!="") )
+    {                                                 # cmdID shouldn't be blank
+      ostr = "0";
+      for(i=1;i<=NF;i++)
+      {
+        if(index(tolower($i),cmdID)==1)
+        {
+          ostr = "1";
+          break;
+        }
+      }
+    }
+    # argument switch mode:
+    # search cmdID as the starting pattern in each field
+    #   if found return next field (should not start with '-')
+    if(cmdmode=="argument")
+    {                                                 # cmd-line argument mode
+      ostr = "";
+      if(cmdID!="")
+      {                                               # cmdID isn't blank
+        for(i=1;i<=NF;i++)
+        {                                             # browse params
+          if(index(tolower($i),cmdID)==1)
+          {                                           # cmdID found
+            if(substr($(i+1),1,1)!= "-")
+            {                                         # return next field if not
+              ostr = $(i+1);                          # starts with "-..."
+              break;
+            }
+          }
+        }
+      }else
+       {                                              # cmdID blank ifile search
+         for(i=NF;i>=1;i--)
+         {                                            # browse params
+           if(i>1)
+           {                                          # search for ifile $2..$NF
+             if( (substr($i,1,1)!= "-")&&(substr($(i-1),1,1)!= "-") )
+             {
+               ostr = $(i);
+               break;
+             }
+           }else
+            {                                         # search for ifile in $1
+              if(substr($i,1,1)!= "-")
+              {
+                ostr = $(i);
+                break;
+              }
+            }
+         }
+       }
+    }
+    printf(ostr);
+  }
+
+
+
+
+}
+
+##############################################################################
+# END section
+##############################################################################
+#END{
+#
+#}
+
+##############################################################################
+# WGL line modificator
+##############################################################################
+function modify_wgl_line(in_str)
+{
+  mwl_ostr = "";
+  if(stop_cond_detected==1)
+    mwl_ostr = in_str;
+  else
+  {
+
+    if(in_str ~ /[0-9]+[.]?[0-9]+[munpf]s/)
+    {
+      mwl_ostr = "";
+      mwl_beg = 1;
+
+      while(match(substr(in_str,mwl_beg),/[0-9]+[.]?[0-9]+[munpf]s/)>0)
+      {
+        mwl_val_str = wgl_time_translator(substr(substr(in_str,mwl_beg),RSTART,RLENGTH));
+        mwl_ostr = sprintf("%s%s%s",mwl_ostr,
+                                  substr(in_str,mwl_beg,RSTART-1), mwl_val_str);
+        mwl_beg += (RSTART + RLENGTH - 1);
+      }
+      mwl_ostr = sprintf("%s%s",mwl_ostr,substr(in_str,mwl_beg));
+
+
+    }else
+      mwl_ostr = in_str;
+
+
+    if(index(in_str,stop_cond_wgl)==1)
+    {
+      stop_cond_detected = 1;
+      mwl_ostr = in_str;
+    }
+  }
+
+  return(mwl_ostr);
+}
+
+# transform [0-9]+[.]?[0-9]+[munpf]s to the same format taking tfactor into account
+
+function wgl_time_translator(in_time)
+{
+  wtt_arr[-1]=5;
+  wtt_arr[1,0] = "ms"; wtt_arr[1,1] = 1e-3;
+  wtt_arr[2,0] = "us"; wtt_arr[2,1] = 1e-6;
+  wtt_arr[3,0] = "ns"; wtt_arr[3,1] = 1e-9;
+  wtt_arr[4,0] = "ps"; wtt_arr[4,1] = 1e-12;
+  wtt_arr[5,0] = "fs"; wtt_arr[5,1] = 1e-15;
+
+  wtt_prefpart = strtonum(substr(tolower(in_time),1,length(in_time)-2));
+
+  wtt_exppart = 1.0;
+  for(wtt_i=1;wtt_i<=wtt_arr[-1];wtt_i++)
+  {
+    if(substr(tolower(in_time),length(in_time)-1)==wtt_arr[wtt_i,0])
+    {
+      wtt_exppart = wtt_arr[wtt_i,1];
+      break;
+    }
+  }
+  wtt_otime =  (wtt_exppart * wtt_prefpart) * tfactor;
+  
+  wtt_tmpotime = wtt_otime;
+  wtt_otime_str = "";
+  for(wtt_i=1;wtt_i<=5;wtt_i++)
+  {
+    wtt_tmpotime*= 1000;
+    if((wtt_tmpotime>=1.0)&&(wtt_tmpotime<1000.0))
+    {
+      break;
+#      wtt_otime_str = sprintf("%f%s",wtt_tmpotime,wtt_arr[wtt_i,0]);
+    }
+  }
+
+  # store just number
+  wtt_otime_str = sprintf("%f",wtt_tmpotime);
+  
+  # remove tailing zeros
+  while (substr(wtt_otime_str,length(wtt_otime_str),1)=="0")
+    wtt_otime_str = substr(wtt_otime_str,1,length(wtt_otime_str)-1);
+  if(substr(wtt_otime_str,length(wtt_otime_str))==".")
+    wtt_otime_str = substr(wtt_otime_str,1,length(wtt_otime_str)-1);
+  # concat suffix
+  wtt_otime_str = sprintf("%s%s",wtt_otime_str,wtt_arr[wtt_i,0]);
+  
+
+#  printf("%s -(%g)> %s\n",in_time, tfactor, wtt_otime_str);
+#  printf("%g %g %g\n",wtt_prefpart,wtt_exppart, wtt_otime);
+  return(wtt_otime_str);
+}
+
+##############################################################################
+# VEC line modificator
+##############################################################################
+function modify_vec_line(in_str)
+{
+  mvl_ostr = "";
+  if(stop_cond_detected==1)
+    mvl_ostr = in_str;
+  else
+  {
+
+    if(in_str ~ /[0-9]+[.]?[0-9]*[eE][+-]?[0-9]+/)
+    {
+      mvl_ostr = "";
+      mvl_beg = 1;
+      while(match(substr(in_str,mvl_beg),/[0-9]+[.]?[0-9]*[eE][+-]?[0-9]+/)>0)
+      {
+        mvl_val = strtonum(substr(substr(in_str,mvl_beg),RSTART,RLENGTH));
+        mvl_ostr = sprintf("%s%s%e",mvl_ostr,
+                                  substr(in_str,mvl_beg,RSTART-1), mvl_val * tfactor);
+        mvl_beg += (RSTART + RLENGTH - 1);
+      }
+      mvl_ostr = sprintf("%s%s",mvl_ostr,substr(in_str,mvl_beg));
+    }else
+      mvl_ostr = in_str;
+
+    if(index(in_str,stop_cond_vec)==1)
+    {
+      stop_cond_detected = 1;
+      mvl_ostr = in_str;
+    }
+  }
+
+  return(mvl_ostr);
+}
+
+##############################################################################
+# time factor checker
+##############################################################################
+function factor_val_range_check(in_factor)
+{
+  min_factor = 1e-5;
+  max_factor = 1e+5;
+  if( ((in_factor+0)<=max_factor)&&((in_factor+0)>=min_factor) )
+    return(1);
+  else
+    return(0);
+}
+
+
+##############################################################################
+# eof
+##############################################################################
+
+
+
+
