@@ -45,7 +45,7 @@ echo "Start playback... (hit enter to start recording)"
 read x
 
 echo "Recording... (press CTRL-C to exit)"
-parec -d "${default_monitor}" | sox -t raw -r 44k -sLb 16 -c 2 - ${out_fn}
+parec -d "${default_monitor}" | sox -t raw -r 44100 -sLb 16 -c 2 - ${out_fn}
 
 ls -lah ${out_fn}
 
