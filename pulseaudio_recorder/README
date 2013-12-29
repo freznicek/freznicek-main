@@ -1,0 +1,64 @@
+Pulseaudio linux command-line recorder
+
+Idea
+  Record just playing audio streams as wav / mp3 using Pulseaudio layer.
+  Minimal dependencies (pulseaudio-utils, sox, lame)
+
+Flow
+  # run the bash demonstrator script ./parec.sh:
+  [f@quad parec]$ parec.sh
+  Initial checks:
+  .pactl ok /usr/bin/pactl
+  .parec ok /usr/bin/parec
+  .sox ok /usr/bin/sox
+  .lame ok /usr/bin/lame
+  Output filename: out.20131229_111426.wav
+  Pulseaudio default sink and monitor checks:
+  .default sink: alsa_output.0
+  .default monitor: alsa_output.0.monitor
+  Start playback... (hit enter to start recording)
+  
+  Recording... (press CTRL-C to exit)
+  ^C-rw-rw-r-- 1 f f 4.2M 2013-12-29 11:15 out.20131229_111426.wav
+  WAV to MP3 Conversion...
+  LAME 3.98.2 64bits (http://www.mp3dev.org/)
+  Resampling:  input 44 kHz  output 32 kHz
+  Using polyphase lowpass filter, transition band: 15613 Hz - 16000 Hz
+  Encoding out.20131229_111426.wav to out.20131229_111426.mp3
+  Encoding as 32 kHz j-stereo MPEG-1 Layer III VBR(q=3)
+      Frame          |  CPU time/estim | REAL time/estim | play/CPU |    ETA
+    687/687   (100%)|    0:00/    0:00|    0:00/    0:00|   32.542x|    0:00
+  32 [107] ***************************************************************
+  40 [  1] %
+  48 [  0]
+  56 [  0]
+  64 [  0]
+  80 [  0]
+  96 [  4] %%*
+  112 [ 96] %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%**********
+  128 [239] %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%**********************************
+  160 [205] %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*****************************
+  192 [ 14] %%%%%%***
+  224 [ 11] %%%%%%*
+  256 [  3] %%
+  320 [  7] %%%%%
+  -----------------------------------------------------------------------------------------------------------------------------------------------------
+    kbps        LR    MS  %     long switch short %
+    125.4       64.9  35.1        94.9   2.2   2.9
+  Writing LAME Tag...done
+  ReplayGain: -0.5dB
+  Summary:
+  -rw-rw-r-- 1 f f 380K 2013-12-29 11:15 out.20131229_111426.mp3
+  -rw-rw-r-- 1 f f 4.2M 2013-12-29 11:15 out.20131229_111426.wav
+
+
+Files
+  parec.sh                  Pulseaudio recorder script
+
+License
+  GPL v3
+  http://www.gnu.org/licenses/gpl-3.0.html
+
+
+
+
